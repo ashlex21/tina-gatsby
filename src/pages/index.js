@@ -4,86 +4,129 @@ import { Link, graphql } from "gatsby"
 import Bio from "../components/bio"
 import Layout from "../components/layout"
 import Seo from "../components/seo"
+import { TinaProvider, TinaCMS, useCMS, useForm, usePlugin } from "tinacms"
 
-const BlogIndex = ({ data, location }) => {
-  const siteTitle = data.site.siteMetadata?.title || `Title`
-  const posts = data.allMarkdownRemark.nodes
-
-  if (posts.length === 0) {
-    return (
-      <Layout location={location} title={siteTitle}>
-        <Seo title="All posts" />
-        <Bio />
-        <p>
-          No blog posts found. Add markdown posts to "content/blog" (or the
-          directory you specified for the "gatsby-source-filesystem" plugin in
-          gatsby-config.js).
-        </p>
-      </Layout>
-    )
-  }
+const BlogIndex = () => {
+  const cms = new TinaCMS({
+    sidebar: true,
+  })
 
   return (
-    <Layout location={location} title={siteTitle}>
-      <Seo title="All posts" />
-      <Bio />
-      <ol style={{ listStyle: `none` }}>
-        {posts.map(post => {
-          const title = post.frontmatter.title || post.fields.slug
-
-          return (
-            <li key={post.fields.slug}>
-              <article
-                className="post-list-item"
-                itemScope
-                itemType="http://schema.org/Article"
-              >
-                <header>
-                  <h2>
-                    <Link to={post.fields.slug} itemProp="url">
-                      <span itemProp="headline">{title}</span>
-                    </Link>
-                  </h2>
-                  <small>{post.frontmatter.date}</small>
-                </header>
-                <section>
-                  <p
-                    dangerouslySetInnerHTML={{
-                      __html: post.frontmatter.description || post.excerpt,
-                    }}
-                    itemProp="description"
-                  />
-                </section>
-              </article>
-            </li>
-          )
-        })}
-      </ol>
-    </Layout>
+    <div>
+      <p>Hello there</p>
+      {/* <PageContent /> */}
+    </div>
   )
 }
 
 export default BlogIndex
 
-export const pageQuery = graphql`
-  query {
-    site {
-      siteMetadata {
-        title
-      }
-    }
-    allMarkdownRemark(sort: { fields: [frontmatter___date], order: DESC }) {
-      nodes {
-        excerpt
-        fields {
-          slug
-        }
-        frontmatter {
-          date(formatString: "MMMM DD, YYYY")
-          title
-          description
-        }
-      }
-    }
+//NON-GATSBY CODE
+
+function PageContent() {
+  const formConfig = {
+    id: "tina-tutorial-index",
+    label: "Edit Page",
+    fields: [
+      {
+        name: "title",
+        label: "Title",
+        component: "text",
+      },
+      {
+        name: "ThisCouldBeYou",
+        label: "slogan",
+        component: "textarea",
+      },
+      {
+        name: "YourJourney",
+        label: "Journey",
+        component: "textarea",
+      },
+      {
+        name: "makeYourCareer",
+        label: "career",
+        component: "textarea",
+      },
+    ],
+    // initialValues: pageData,
+    loadInitialValues() {
+      return fetch("http://localhost:1337/home-pages/1").then(response =>
+        response.json()
+      )
+    },
+    // onSubmit: async () => {
+    //   window.alert("Saved!");
+    // },
+    onSubmit(formData) {
+      const { makeYourCareer, YourJourney, ThisCouldBeYou } = formData
+      return fetch("http://localhost:1337/home-pages/1", {
+        method: "PUT",
+        body: JSON.stringify({
+          id: 1,
+          title: formData.title,
+          body: formData.body,
+          makeYourCareer,
+          YourJourney,
+          ThisCouldBeYou,
+          userId: 1,
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(e => console.error(e))
+    },
   }
-`
+
+  // 3. Create the form
+  const [editableData, form] = useForm(formConfig)
+
+  const { title, makeYourCareer, YourJourney, ThisCouldBeYou } = editableData
+
+  // 4. Register it with the CMS
+  usePlugin(form)
+
+  return (
+    <section className="App-header">
+      {/* <img src={logo} className="App-logo" alt="logo" /> */}
+      <h1>{title}</h1>
+      <p>{makeYourCareer}</p>
+      <p>{YourJourney}</p>
+      <p>{ThisCouldBeYou}</p>
+      {/* <p>{makeYourCareer}</p> */}
+      <EditButton />
+    </section>
+  )
+}
+
+function EditButton() {
+  const cms = useCMS()
+  return (
+    <button onClick={() => cms.toggle()}>
+      {cms.enabled ? "Exit Edit Mode" : "Edit This Site"}
+    </button>
+  )
+}
+
+// import logo from "./Icon.svg"
+// import "./App.css"
+
+// function App() {
+//   return (
+//     <TinaProvider cms={cms}>
+//       <div className="App">
+//         <PageContent />
+//       </div>
+//     </TinaProvider>
+//   )
+// }
+
+// export default App
+
+// const pageData = {
+//   title: "Tina is not a CMS",
+//   body: "It is a toolkit for creating a custom CMS.",
+// };
