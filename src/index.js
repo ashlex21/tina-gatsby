@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react"
-
+import * as React from "react"
 import { TinaProvider, TinaCMS, useCMS, useForm, usePlugin } from "tinacms"
 
-const BlogIndex = () => {
+const BlogIndex = ({ pageContext: pageRecord }) => {
   const cms = new TinaCMS({
     sidebar: true,
   })
@@ -10,7 +9,8 @@ const BlogIndex = () => {
   return (
     <TinaProvider cms={cms}>
       <div>
-        <PageContent />
+        <p>Hello there</p>
+        <PageContent page={pageRecord} />
       </div>
     </TinaProvider>
   )
@@ -18,16 +18,17 @@ const BlogIndex = () => {
 
 export default BlogIndex
 
-function PageContent() {
-  //Step 1
-  const [tinaFields, setTinaFields] = React.useState([])
+//NON-GATSBY CODE
+
+function PageContent({ page }) {
+  // Step 1: Define page data (Different for different pages)
   const defaultSchema = {
     header: {
       options: [
         {
-          name: "header.options[0]",
           label: "Home",
-          component: "text",
+          link: "",
+          name: "header.options[0]",
           field: true,
         },
         {
@@ -49,54 +50,46 @@ function PageContent() {
       ],
     },
   }
-  // const [pageData, setPageData] = useState(page.content || defaultSchema)
-  const [pageData, setPageData] = useState(defaultSchema)
+  const [pageData, setPageData] = useState(page.content || defaultSchema)
 
   // Step 2: Extract fields from page data
-
   let fields = []
 
-  const traverse = obj => {
-    let currentObj = obj
-
-    if (currentObj.field) {
-      fields.push(currentObj)
-    } else if (Array.isArray(currentObj)) {
-      currentObj.forEach(object => traverse(object))
-    } else if (typeof currentObj == "object") {
-      // const keys = Object.keys(currentObj);
-      // keys.forEach((key) => traverse(currentObj[key]));
-      Object.keys(currentObj).forEach(key => traverse(currentObj[key]))
-    }
+  const traverse = pageData => {
+    let currentObj = pageData
+    if (currentObj.field) fields.push(currentObj)
+    /*
+      if (pageData is array) traverse items and traverse them
+       if(Array.isArray(pageData)) traverse(pageData)
+      if (pageData is object) traverse each key
+      if(Object.keys(pageData))Object.keys.map
+      else ignore
+    */
   }
-
-  React.useEffect(() => {
-    traverse(pageData)
-    console.log(tinaFields)
-    setTinaFields(fields)
-    console.log(tinaFields)
-  }, [])
 
   const formConfig = {
     id: "tina-tutorial-index",
     label: "Edit Page",
-    //Step 3
-    fields: tinaFields,
-
+    // Step 3: Add that fields array to formConfig
+    fields,
     loadInitialValues() {
-      return fetch(`http://localhost:1337/pages/1/`).then(response =>
+      return fetch(`http://localhost:1337/pages/1/${page.id}`).then(response =>
         setPageData({
           ...pageData,
           ...response.content,
         })
       )
     },
-
+    // Step 4: Extract page schema from fields object
     onSubmit(formData) {
+      const _formData = {
+        "header.languages[0]": "English",
+        "header.languages[1]": "Hindi",
+      }
       // Mid step: Duplicate the pageData into finalForm
       const purify = e => JSON.parse(JSON.stringify(e))
 
-      const finalForm = purify(pageData)
+      const finalForm = purify(pageData) //same traverse function or just to make duplicate like const purify = pageData => {return dupData = pageData}
 
       // Step 5: Go through all the fields from formData
       Object.keys(formData).map(address => {
@@ -104,17 +97,30 @@ function PageContent() {
         const value = formData[address]
         // Step 7: Assign the value to that location in finalForm
         eval(`finalForm.${address}.value = ${value}`)
-        //beaware when value is string, you've to tweak the value of above then
       })
 
-      return fetch(`http://localhost:1337/pages/1`, {
+      /*
+        For strapi
+
+        1. Make a content type for all pages (not just individual pages)
+        2. Page schema
+          - id
+          - code
+          - content
+          - type
+            - home
+            - about
+            - contact
+      */
+
+      return fetch(`http://localhost:1337/pages/${page.id}`, {
         method: "PUT",
         // Last step: Send data to strapi
         body: JSON.stringify({
-          code: "hn",
+          code: page.code,
           content: finalForm,
-          type: "home",
-        }),
+          type: page.type,
+        }), //to be filled
         headers: {
           "Content-type": "application/json; charset=UTF-8",
         },
@@ -127,16 +133,20 @@ function PageContent() {
 
   // 3. Create the form
   const [editableData, form] = useForm(formConfig)
-  // content will come as header.options.something so keep your heads up
-  console.log(editableData)
+
+  const { title, makeYourCareer, YourJourney, ThisCouldBeYou } = editableData
 
   // 4. Register it with the CMS
   usePlugin(form)
 
   return (
     <section className="App-header">
-      {/* {editableData} */}
-      <p>hello there</p>
+      {/* <img src={logo} className="App-logo" alt="logo" /> */}
+      <h1>{title}</h1>
+      <p>{makeYourCareer}</p>
+      <p>{YourJourney}</p>
+      <p>{ThisCouldBeYou}</p>
+      {/* <p>{makeYourCareer}</p> */}
       <EditButton />
     </section>
   )

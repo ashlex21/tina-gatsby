@@ -13,16 +13,16 @@ module.exports = {
   },
   plugins: [
     `gatsby-plugin-image`,
-    {
-      resolve: "gatsby-plugin-tinacms",
-      options: {
-        sidebar: {
-          hidden: process.env.NODE_ENV === "production",
-          position: "displace",
-        },
-        plugins: ["gatsby-tinacms-git", "gatsby-tinacms-remark"],
-      },
-    },
+    // {
+    //   resolve: "gatsby-plugin-tinacms",
+    //   options: {
+    //     sidebar: {
+    //       hidden: process.env.NODE_ENV === "production",
+    //       position: "displace",
+    //     },
+    //     plugins: ["gatsby-tinacms-git", "gatsby-tinacms-remark"],
+    //   },
+    // },
     {
       resolve: `gatsby-source-filesystem`,
       options: {
